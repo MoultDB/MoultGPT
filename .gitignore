@@ -22,11 +22,6 @@ mistral_env/
 *.pth
 *.safetensors
 
-# Ignore intermediate outputs and experiment folders
-output/
-CNN/output/
-finetuning/output/
-
 # Ignore training scripts if not used directly
 CNN/training/*.sbatch
 CNN/training/*.sh
