@@ -12,7 +12,13 @@ mistral_env/
 
 # Ignore logs and error outputs
 #*.log
-#*.err
+*.err
+
+# Ignore logs globally
+*.log
+
+# But keep logs in CNN/output
+!CNN/output/*.log
 
 # Ignore SLURM and shell scripts
 *.sbatch
