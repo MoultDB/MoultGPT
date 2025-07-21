@@ -11,16 +11,16 @@ __pycache__/
 mistral_env/
 
 # Ignore logs and error outputs
-*.log
-*.err
+#*.log
+#*.err
 
 # Ignore SLURM and shell scripts
 *.sbatch
 *.sh
 
 # Ignore model weights and binary files
-*.pth
-*.safetensors
+#*.pth
+#*.safetensors
 
 # Ignore training scripts if not used directly
 CNN/training/*.sbatch
