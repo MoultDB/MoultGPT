@@ -2,6 +2,7 @@ import os
 import re
 import sys
 import torch
+import json
 import tempfile
 import numpy as np
 from flask import Flask, request, jsonify
@@ -10,9 +11,11 @@ from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
 from peft import PeftModel
 
 # === Path a moduli locali ===
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "paper_handler")))
-from processor import input_to_text
-from preprocessing import extract_relevant_sentences
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+from CNN.image_predictor import predict_image
+from paper_handler.processor import input_to_text
+from backend.preprocessing import extract_relevant_sentences
 
 # === Flask app ===
 print("[BOOT] Initializing Flask backend...")
@@ -20,8 +23,9 @@ app = Flask(__name__)
 CORS(app)
 
 # === Percorsi dei modelli ===
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 MODEL_PATH = "/reference/LLMs/Mistral_AI/mistral-7B-Instruct-v0.3-hf/"
-LORA_PATH = "/work/FAC/FBM/DEE/mrobinso/moult/michele/LLM/outputs/mistral-finetuned/"
+LORA_PATH = os.path.join(BASE_DIR, "output", "lora_mistral")
 
 # === Load tokenizer ===
 tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
@@ -41,7 +45,7 @@ base_model = AutoModelForCausalLM.from_pretrained(
 )
 
 # === Loada adapter LoRA fine-tuned ===
-USE_LORA = False  # ⬅️ cambia in True per attivare l'adapter
+USE_LORA = False
 
 if USE_LORA:
     model = PeftModel.from_pretrained(base_model, LORA_PATH)
@@ -131,6 +135,64 @@ def handle_query():
         import traceback
         traceback.print_exc()
         return jsonify({"response": f"Internal error: {str(e)}"}), 500
+
+@app.route("/feedback", methods=["POST"])
+def handle_feedback():
+    print("[FEEDBACK] Received user feedback")
+    try:
+        data = request.json
+        prompt = data.get("prompt", "").strip()
+        response = data.get("response", "").strip()
+        feedback = data.get("feedback", "").strip()
+        source = data.get("source", "manual_feedback")
+
+        if not prompt or not response:
+            return jsonify({"status": "Missing required fields"}), 400
+
+        feedback_entry = {
+            "prompt": prompt,
+            "model_response": response,
+            "user_feedback": feedback,
+            "source": source
+        }
+
+        # Path to feedback file
+        BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+        feedback_path = os.path.join(BASE_DIR, "output", "user_feedback.jsonl")
+
+        with open(feedback_path, "a") as f:
+            f.write(json.dumps(feedback_entry) + "\n")
+
+        return jsonify({"status": "Feedback saved"})
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"status": f"Internal error: {str(e)}"}), 500
+
+@app.route("/predict_image", methods=["POST"])
+def handle_image_prediction():
+    print("[IMAGE] Incoming image prediction request")
+    try:
+        if "image" not in request.files or "taxon_id" not in request.form:
+            return jsonify({"error": "Missing image or taxon_id"}), 400
+
+        image_file = request.files["image"]
+        taxon_id = int(request.form["taxon_id"])
+
+        # Salva immagine temporaneamente
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp:
+            image_file.save(tmp.name)
+            result = predict_image(tmp.name, taxon_id)
+            os.unlink(tmp.name)
+
+        return jsonify(result)
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": f"Internal error: {str(e)}"}), 500
+
 
 # === Avvia server ===
 if __name__ == "__main__":

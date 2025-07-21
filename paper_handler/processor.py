@@ -5,8 +5,7 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), ".")))
 
 from downloader import download_pdf_from_doi
-from parser import parse_pdf_with_grobid, tei_to_text
-
+from .parser import parse_pdf_with_grobid, tei_to_text
 
 def input_to_text(doi: str = None, pdf_path: str = None, email: str = "your@email.com") -> str:
     """

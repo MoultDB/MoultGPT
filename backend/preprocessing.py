@@ -4,7 +4,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.cluster import KMeans
 
 # === Parameters ===
-NUM_SENTENCES = 12
+NUM_SENTENCES = 20
 KEYWORDS = [
     "moult", "moulting", "instar", "stadium", "cuticle", "ecdysis", "shed",
     "exuviae", "aestivation", "desiccation", "survival", "water loss",

@@ -1,1 +1,1 @@
-from .processor import doi_to_text
+from .processor import input_to_text
