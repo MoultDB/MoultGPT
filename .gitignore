@@ -1,0 +1,44 @@
+# Ignore Python cache and compiled files
+__pycache__/
+*.py[cod]
+
+# Ignore Jupyter/IPython temp files
+*.ipynb_checkpoints
+
+# Ignore virtual environments
+.env/
+.venv/
+mistral_env/
+
+# Ignore logs and error outputs
+*.log
+*.err
+
+# Ignore SLURM and shell scripts
+*.sbatch
+*.sh
+
+# Ignore model weights and binary files
+*.pth
+*.safetensors
+
+# Ignore intermediate outputs and experiment folders
+output/
+CNN/output/
+finetuning/output/
+
+# Ignore training scripts if not used directly
+CNN/training/*.sbatch
+CNN/training/*.sh
+
+# Ignore raw dataset folders and in-progress files
+data/
+papers/
+backend/data/papers_pdf/
+backend/data/papers_txt/
+finetuning/file/
+
+# Ignore editor or OS-specific files
+.DS_Store
+*.swp
+*.swo
