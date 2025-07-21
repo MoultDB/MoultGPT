@@ -1,0 +1,48 @@
+Using GPU:
+Sun Jul 20 20:27:21 2025       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 565.57.01              Driver Version: 565.57.01      CUDA Version: 12.7     |
+|-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA A100-PCIE-40GB          On  |   00000000:E2:00.0 Off |                    0 |
+| N/A   27C    P0             31W /  250W |       1MiB /  40960MiB |      0%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+                                                                                         
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI        PID   Type   Process name                              GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|  No running processes found                                                             |
++-----------------------------------------------------------------------------------------+
+[Epoch 1/25] Train Loss: 1.1495 | Val Acc: 0.4947
+✅ New best model saved at epoch 1
+[Epoch 2/25] Train Loss: 0.7342 | Val Acc: 0.4842
+[Epoch 3/25] Train Loss: 0.5859 | Val Acc: 0.5474
+✅ New best model saved at epoch 3
+[Epoch 4/25] Train Loss: 0.4276 | Val Acc: 0.5263
+[Epoch 5/25] Train Loss: 0.4111 | Val Acc: 0.5368
+[Epoch 6/25] Train Loss: 0.2993 | Val Acc: 0.5263
+[Epoch 7/25] Train Loss: 0.2970 | Val Acc: 0.5158
+[Epoch 8/25] Train Loss: 0.2231 | Val Acc: 0.5211
+⏹️ Early stopping triggered
+\nClassification Report:
+              precision    recall  f1-score   support
+
+     exuviae       0.55      0.76      0.64        71
+    moulting       0.55      0.47      0.51        47
+  post-moult       0.46      0.34      0.39        65
+   pre-moult       0.33      0.14      0.20         7
+
+    accuracy                           0.52       190
+   macro avg       0.47      0.43      0.43       190
+weighted avg       0.51      0.52      0.50       190
+
+\n🏆 Top 3 validation epochs:
+Epoch 3: 0.5474
+Epoch 5: 0.5368
+Epoch 4: 0.5263

@@ -1,0 +1,53 @@
+Environment: /work/FAC/FBM/DEE/mrobinso/moult/michele/CNN/cnn_env
+Using GPU:
+Sat Jul 19 18:10:13 2025       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 565.57.01              Driver Version: 565.57.01      CUDA Version: 12.7     |
+|-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA A100-PCIE-40GB          On  |   00000000:21:00.0 Off |                    0 |
+| N/A   29C    P0             32W /  250W |       1MiB /  40960MiB |      0%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+                                                                                         
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI        PID   Type   Process name                              GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|  No running processes found                                                             |
++-----------------------------------------------------------------------------------------+
+[Epoch 1/25] Train Loss: 1.1449 | Val Acc: 0.5439
+[Epoch 2/25] Train Loss: 0.9477 | Val Acc: 0.4737
+[Epoch 3/25] Train Loss: 1.1669 | Val Acc: 0.3158
+[Epoch 4/25] Train Loss: 0.9746 | Val Acc: 0.5789
+[Epoch 5/25] Train Loss: 0.9264 | Val Acc: 0.5088
+[Epoch 6/25] Train Loss: 0.8293 | Val Acc: 0.3509
+[Epoch 7/25] Train Loss: 0.8326 | Val Acc: 0.4211
+[Epoch 8/25] Train Loss: 0.8984 | Val Acc: 0.4211
+[Epoch 9/25] Train Loss: 0.6736 | Val Acc: 0.5439
+[Epoch 10/25] Train Loss: 0.7209 | Val Acc: 0.6140
+[Epoch 11/25] Train Loss: 0.5917 | Val Acc: 0.4561
+[Epoch 12/25] Train Loss: 0.7088 | Val Acc: 0.3509
+[Epoch 13/25] Train Loss: 0.7173 | Val Acc: 0.5263
+[Epoch 14/25] Train Loss: 0.7688 | Val Acc: 0.6491
+[Epoch 15/25] Train Loss: 0.7048 | Val Acc: 0.6140
+[Epoch 16/25] Train Loss: 0.6086 | Val Acc: 0.5965
+[Epoch 17/25] Train Loss: 0.5362 | Val Acc: 0.5263
+[Epoch 18/25] Train Loss: 0.7981 | Val Acc: 0.5263
+[Epoch 19/25] Train Loss: 0.8181 | Val Acc: 0.4211
+[Epoch 20/25] Train Loss: 0.8158 | Val Acc: 0.4561
+[Epoch 21/25] Train Loss: 0.5747 | Val Acc: 0.5614
+[Epoch 22/25] Train Loss: 0.5216 | Val Acc: 0.4211
+[Epoch 23/25] Train Loss: 0.6744 | Val Acc: 0.5614
+[Epoch 24/25] Train Loss: 0.6387 | Val Acc: 0.5263
+[Epoch 25/25] Train Loss: 0.8245 | Val Acc: 0.4035
+
+ Best model saved to models/resnet18_moulting_best.pth
+🏆 Top 3 epochs:
+Epoch 14: 0.6491
+Epoch 10: 0.6140
+Epoch 15: 0.6140
