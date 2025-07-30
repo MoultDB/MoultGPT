@@ -1,45 +1,27 @@
-# Ignore Python cache and compiled files
-__pycache__/
-*.py[cod]
-
-# Ignore Jupyter/IPython temp files
-*.ipynb_checkpoints
-
-# Ignore virtual environments
-.env/
-.venv/
+# Virtual environment
 mistral_env/
 
-# Ignore logs and error outputs
-#*.log
+# Cache and compiled files
+__pycache__/
+*.py[cod]
+*.log
 *.err
 
-# Ignore logs globally
-*.log
+# Checkpoints and models
+*.pt
+*.pth
+*.pkl
+*.safetensors
 
-# But keep logs in CNN/output
-!CNN/output/*.log
+# Heavy data folders
+output/
+data/papers_pdf/
+data/papers_txt/
+CNN/data/inat/
+CNN/data/yolo/
+CNN/models/
+finetuning/output/
 
-# Ignore SLURM and shell scripts
-*.sbatch
-*.sh
-
-# Ignore model weights and binary files
-#*.pth
-#*.safetensors
-
-# Ignore training scripts if not used directly
-CNN/training/*.sbatch
-CNN/training/*.sh
-
-# Ignore raw dataset folders and in-progress files
-data/
-papers/
-backend/data/papers_pdf/
-backend/data/papers_txt/
-finetuning/file/
-
-# Ignore editor or OS-specific files
-.DS_Store
-*.swp
-*.swo
+# React build artifacts (optional)
+frontend/build/
+frontend/node_modules/

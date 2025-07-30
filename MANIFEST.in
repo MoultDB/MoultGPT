@@ -1,7 +1,7 @@
 # Exclude unnecessary files from source distributions
 
 # Exclude logs and error files
-#global-exclude *.log
+global-exclude *.log
 global-exclude *.err
 
 # Exclude shell and SLURM batch scripts
@@ -9,7 +9,9 @@ global-exclude *.sh
 global-exclude *.sbatch
 
 # Exclude model weight files
-#global-exclude *.pth
+global-exclude *.pth
+global-exclude *.pt
+global-exclude *.pkl
 global-exclude *.safetensors
 
 # Exclude compiled Python files and cache
@@ -17,7 +19,11 @@ global-exclude *.py[cod]
 prune **/__pycache__
 
 # Exclude local dataset and output directories
-prune data
+prune data/papers_pdf
+prune data/papers_txt
 prune papers
-#prune CNN/output
+prune CNN/models
+prune CNN/data/inat
+prune CNN/data/yolo
+prune output
 prune finetuning/output
