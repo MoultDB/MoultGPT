@@ -18,7 +18,7 @@
 ## ⚙️ Environment Setup
 
 ```bash
-git clone https://github.com/your-user/MoultGPT.git
+git clone https://github.com/MicheleRoar/MoultGPT.git
 cd MoultGPT
 
 # Python environment
