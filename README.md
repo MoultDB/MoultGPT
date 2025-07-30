@@ -62,7 +62,7 @@ MoultGPT includes a robust pipeline for automatic classification of moulting sta
 
 ### 📸 Example Predictions
 
-| ![armadillium](test/results/armadillium.jpg) | ![cicada_exuviae](test/results/cicada_exuviae.jpg) | ![cicada](test/results/cicada.jpg) |
+| ![armadillium](CNN/test/results/armadillium.jpg) | ![cicada_exuviae](CNN/test/results/cicada_exuviae.jpg) | ![cicada](CNN/test/results/cicada.jpg) |
 |:-------------------------------------------:|:--------------------------------------------------:|:----------------------------------:|
 | post-moult (0.53)                           | exuviae (0.63)                                     | moulting (0.64)                   |
 
