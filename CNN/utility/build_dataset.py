@@ -10,7 +10,7 @@ PROJECT_ID = 200497
 VALID_LICENSES = {'cc0', 'cc-by', 'cc-by-nc'}
 BLOCKED_URL_PREFIX = 'https://static.inaturalist.org'
 API_ENDPOINT = 'https://api.inaturalist.org/v1/observations'
-OUTPUT_DIR = Path("../inat_data")
+OUTPUT_DIR = Path("../data/inat")
 TRAIN_RATIO = 0.8
 MAX_IMAGES = 1100
 
@@ -112,26 +112,30 @@ def download_moulting_images(observations, base_dir, train_ratio):
             "observation_id": obs.get("id")
         })
 
-    csv_path = base_dir / "dataset_metadata.csv"
+    DATA_DIR = (Path(__file__).parent / "../../data").resolve()
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    csv_path = DATA_DIR / "annotated_dataset.csv"
+    csv_path.parent.mkdir(parents=True, exist_ok=True)
+
     with open(csv_path, "w", newline="") as csvfile:
         fieldnames = ["filename", "stage", "split", "taxon_id", "taxon_name", "taxon_group", "observation_id"]
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(metadata_records)
 
-    return count_per_class, skipped
+    return count_per_class, skipped, csv_path
 
 
 def build_moulting_stage_dataset():
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     observations = fetch_observations(PROJECT_ID, max_results=MAX_IMAGES)
-    counts, skipped = download_moulting_images(observations, OUTPUT_DIR, TRAIN_RATIO)
+    counts, skipped, csv_path = download_moulting_images(observations, OUTPUT_DIR, TRAIN_RATIO)
 
-    print("\\n Image count per class:")
+    print("\n Image count per class:")
     for stage, count in counts.items():
         print(f"- {stage}: {count} images")
     print(f"Skipped {skipped} observations with missing or invalid stage.")
-    print(f"Metadata saved to {OUTPUT_DIR / 'dataset_metadata.csv'}")
+    print(f"Metadata saved to {csv_path.resolve()}")
 
 
 if __name__ == "__main__":

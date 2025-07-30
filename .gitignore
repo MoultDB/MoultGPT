@@ -1,27 +1,30 @@
-# Virtual environment
-mistral_env/
+# Mac system files
+.DS_Store
 
-# Cache and compiled files
+# Python cache
 __pycache__/
 *.py[cod]
-*.log
-*.err
 
-# Checkpoints and models
+# Log, models, training files
+*.log
 *.pt
 *.pth
 *.pkl
-*.safetensors
 
-# Heavy data folders
+# Virtual env
+mistral_env/
+
+# Output & data
 output/
-data/papers_pdf/
-data/papers_txt/
-CNN/data/inat/
-CNN/data/yolo/
+CNN/data/
 CNN/models/
-finetuning/output/
+CNN/output/
+CNN/test/
+CNN/scripts/
+CNN/utility/annotation/
+backend/data/
+papers/
+tools/
 
-# React build artifacts (optional)
-frontend/build/
+# Node
 frontend/node_modules/

@@ -1,5 +1,4 @@
 import os
-import re
 import sys
 import torch
 import json
@@ -10,55 +9,46 @@ from flask_cors import CORS
 from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
 from peft import PeftModel
 
-# === Path a moduli locali ===
+# === Local imports ===
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-
-from CNN.image_predictor import predict_image
+from CNN.scripts.predict.image_predictor import predict_stage_from_image as predict_image
 from paper_handler.processor import input_to_text
 from backend.preprocessing import extract_relevant_sentences
 
-# === Flask app ===
+# === Init Flask app ===
 print("[BOOT] Initializing Flask backend...")
 app = Flask(__name__)
 CORS(app)
 
-# === Percorsi dei modelli ===
+# === Paths ===
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 MODEL_PATH = "/reference/LLMs/Mistral_AI/mistral-7B-Instruct-v0.3-hf/"
 LORA_PATH = os.path.join(BASE_DIR, "output", "lora_mistral")
 
-# === Load tokenizer ===
+# === Tokenizer and Model ===
 tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
 
-# === Configurazione BitsAndBytes per quantizzazione 4bit ===
 bnb_config = BitsAndBytesConfig(
     load_in_4bit=True,
     bnb_4bit_compute_dtype=torch.float16,
     bnb_4bit_use_double_quant=True
 )
 
-# === Carica modello base quantizzato ===
 base_model = AutoModelForCausalLM.from_pretrained(
     MODEL_PATH,
     quantization_config=bnb_config,
     device_map="auto"
 )
 
-# === Loada adapter LoRA fine-tuned ===
 USE_LORA = False
-
-if USE_LORA:
-    model = PeftModel.from_pretrained(base_model, LORA_PATH)
-else:
-    model = base_model
-
+model = PeftModel.from_pretrained(base_model, LORA_PATH) if USE_LORA else base_model
 model.eval()
 
 print(f"[BOOT] Loaded base model: {MODEL_PATH}")
-print(f"[BOOT] Attached LoRA adapter from: {LORA_PATH}")
-print("[BOOT] Model with LoRA loaded successfully.")
+print(f"[BOOT] LoRA enabled: {USE_LORA}")
 
 # === Routes ===
+
 @app.route("/", methods=["GET"])
 def root():
     return "LLM backend is running"
@@ -73,12 +63,10 @@ def handle_query():
         raw_text = data.get("text", "").strip()
         uploaded_file = request.files.get("file")
 
-        print(f"[QUERY] DOI: {doi}, file: {uploaded_file.filename if uploaded_file else 'None'}, prompt chars: {len(prompt)}")
-
         if not prompt:
             return jsonify({"response": "Missing query prompt."}), 400
 
-        # === Step 1: Estrai testo da input ===
+        # Input: DOI, file, or raw text
         if doi:
             full_text = input_to_text(doi=doi, email="your@email.com")
         elif uploaded_file:
@@ -94,28 +82,18 @@ def handle_query():
         if not full_text or len(full_text.strip()) < 100:
             return jsonify({"response": "Could not extract meaningful content."}), 500
 
-        # === Step 2: Sentence filtering ===
         summary = extract_relevant_sentences(full_text)
         print(f"[INFO] Extracted {summary.count(chr(10))} relevant lines")
 
-        # === Step 3: Prompt formatting ===
-        fixed = (
+        fixed_prompt = (
             "You are a scientific assistant specialized in arthropod moulting.\n"
             "Extract only the specific biological trait requested in the prompt.\n"
             "Return only clean, concise YAML. Do not include any explanation, metadata, or extra text."
         )
-        combined = f"{fixed}\n\n{summary.strip()}\n\n{prompt.strip()}"
-        formatted_prompt = f"<s>[INST] {combined} [/INST]"
+        combined_prompt = f"<s>[INST] {fixed_prompt}\n\n{summary.strip()}\n\n{prompt.strip()} [/INST]"
 
-        # === Step 4: Tokenize and infer ===
-        print("[INFO] Tokenizing input...")
         device = "cuda" if torch.cuda.is_available() else "cpu"
-        inputs = tokenizer(
-            formatted_prompt,
-            return_tensors="pt",
-            truncation=True,
-            max_length=2048
-        ).to(device)
+        inputs = tokenizer(combined_prompt, return_tensors="pt", truncation=True, max_length=2048).to(device)
 
         print("[INFO] Running LLM generation...")
         output_ids = model.generate(
@@ -141,25 +119,17 @@ def handle_feedback():
     print("[FEEDBACK] Received user feedback")
     try:
         data = request.json
-        prompt = data.get("prompt", "").strip()
-        response = data.get("response", "").strip()
-        feedback = data.get("feedback", "").strip()
-        source = data.get("source", "manual_feedback")
-
-        if not prompt or not response:
-            return jsonify({"status": "Missing required fields"}), 400
-
         feedback_entry = {
-            "prompt": prompt,
-            "model_response": response,
-            "user_feedback": feedback,
-            "source": source
+            "prompt": data.get("prompt", "").strip(),
+            "model_response": data.get("response", "").strip(),
+            "user_feedback": data.get("feedback", "").strip(),
+            "source": data.get("source", "manual_feedback")
         }
 
-        # Path to feedback file
-        BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-        feedback_path = os.path.join(BASE_DIR, "output", "user_feedback.jsonl")
+        if not feedback_entry["prompt"] or not feedback_entry["model_response"]:
+            return jsonify({"status": "Missing required fields"}), 400
 
+        feedback_path = os.path.join(BASE_DIR, "output", "user_feedback.jsonl")
         with open(feedback_path, "a") as f:
             f.write(json.dumps(feedback_entry) + "\n")
 
@@ -180,21 +150,26 @@ def handle_image_prediction():
         image_file = request.files["image"]
         taxon_id = int(request.form["taxon_id"])
 
-        # Salva immagine temporaneamente
         with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp:
             image_file.save(tmp.name)
-            result = predict_image(tmp.name, taxon_id)
+            pred_label, prob, boxes = predict_image(tmp.name, taxon_id)
             os.unlink(tmp.name)
 
-        return jsonify(result)
+        # Clean result
+        result_clean = {
+            "label": pred_label,
+            "confidence": float(prob),
+            "boxes": {k: v if v is not None else [] for k, v in boxes.items()}
+        }
+
+        return jsonify(result_clean)
 
     except Exception as e:
         import traceback
         traceback.print_exc()
         return jsonify({"error": f"Internal error: {str(e)}"}), 500
 
-
-# === Avvia server ===
+# === Start ===
 if __name__ == "__main__":
     print("[BOOT] Running backend on http://0.0.0.0:5001")
     app.run(host="0.0.0.0", port=5001)
