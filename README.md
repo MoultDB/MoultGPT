@@ -1,119 +1,127 @@
 # 🐛 MoultGPT
 
-**MoultGPT** is a modular NLP & CV pipeline for extracting biologically relevant traits related to moulting in arthropods from scientific literature and images. It combines PDF parsing, sentence summarization, trait extraction using a local LLM, and image classification using custom CNNs, with an interactive React interface.
+**MoultGPT** is a modular NLP & CV pipeline for extracting biologically relevant traits related to moulting in arthropods from scientific literature and images. It combines full-text parsing, sentence-level summarization, trait extraction using a local LLM, and image-based stage classification using CNNs. The entire pipeline is accessible through an interactive React interface.
 
 ---
 
 ## 🚀 Features
 
-- 🧠 Local inference using Mistral 7B (HF Transformers)
-- 📄 PDF parsing with GROBID
-- 🔍 Sentence-level summarization using TF-IDF + KMeans
-- ✍️ Trait extraction in YAML format
-- 🧪 Fine-tuning with LoRA on custom data
-- 🖼️ Image-based classification of moulting stages (CNN)
-- 🌐 Interactive frontend (React) + backend (Flask)
+- 🧠 Local inference using Mistral 7B (via HuggingFace Transformers)
+- 📄 PDF parsing and TEI conversion using GROBID (CLI)
+- 🔍 Sentence-level summarization with TF-IDF + clustering
+- ✍️ YAML-style trait extraction using LLM
+- 🖼️ Image-based stage prediction using EfficientNet CNNs
+- 🌐 Frontend (React) + backend (Flask)
 
 ---
 
-## ⚙️ Environment Setup (Python virtualenv)
+## ⚙️ Environment Setup
 
 ```bash
-# Clone the repo
 git clone https://github.com/your-user/MoultGPT.git
 cd MoultGPT
 
-# Create and activate virtual environment
+# Python environment
 python3 -m venv mistral_env
 source mistral_env/bin/activate
-
-# Install dependencies
 pip install -r requirements.txt
 ```
 
 ---
 
-## 🧠 Running the backend (Flask + LLM + CNN)
+## 🧠 Backend (Flask + LLM + CNN)
 
 ```bash
 cd backend
 python app.py
 ```
 
-Make sure the following models are available:
-- `mistral-7B-Instruct-v0.3` (path configurable in `app.py`)
-- CNN weights in `models/`:
-  - `effnet_multistage_best.pth` – step 1: living vs exuviae
-  - `efficientnet_living_best.pth` – step 2: pre-moult / moulting / post-moult
+Ensure the following models are available:
+
+- `mistral-7B-Instruct-v0.3` LLM (path configured in `app.py`)
+- CNNs stored in `models/`:
+  - `yolov8m.pt` — bounding box detector
+  - `xgboost_stage.pkl` — stage classifier (from geometric features)
 
 ---
 
-## 🧬 CNN-based Image Classification
+## 🖼️ CNN-based Image Classification (Highlight)
 
-MoultGPT integrates a two-step image classification pipeline trained on expert-annotated arthropod moulting observations from iNaturalist:
+MoultGPT includes a robust pipeline for automatic classification of moulting stages from arthropod images.
 
-### 🏗️ Architecture
+### 🏗️ Pipeline Overview
 
-- Step 1: `MultiTaskEffNet`  
-  Classifies **exuviae vs living** (EfficientNet + taxon embedding)
-- Step 2: `CustomEffNet`  
-  Classifies **pre-moult / moulting / post-moult** (if living)
+1. **YOLOv8** detects bounding boxes for:
+   - `organism`
+   - `exuviae`
+2. **Feature extraction**: spatial + color-based features computed from boxes
+3. **XGBoost classifier** predicts moulting stage:
+   - `pre-moult`, `moulting`, `post-moult`, `exuviae`
 
-### 🧪 Biological Data Augmentation
+---
 
-Class-aware augmentation was applied, e.g.:
+### 📸 Example Predictions
 
-| Class       | Augmentation Strategy |
-|-------------|-----------------------|
-| exuviae     | Grayscale, light blur |
-| post-moult  | Color jitter (teneral effect) |
-| moulting    | Center crop only |
-| pre-moult   | No augmentation (fragile state) |
+| ![armadillium](test/results/armadillium.jpg) | ![cicada_exuviae](test/results/cicada_exuviae.jpg) | ![cicada](test/results/cicada.jpg) |
+|:-------------------------------------------:|:--------------------------------------------------:|:----------------------------------:|
+| post-moult (0.53)                           | exuviae (0.63)                                     | moulting (0.64)                   |
 
-### 🧠 Prediction API
+Bounding boxes are color-coded:
+- 🟥 `organism`
+- 🟦 `exuviae`
+- 🟢 stage label and confidence
 
-You can send a POST request to:
+---
+
+## 📬 Prediction API
+
+Send a POST request to:
 
 ```
 /predict_image
 ```
 
 With:
-- `image` – uploaded `.jpg`
-- `taxon_id` – one of:  
+- `image`: JPG or PNG image
+- `taxon_id`: one of  
   `0 = Arachnida`, `1 = Crustacea`, `2 = Hexapoda`, `3 = Myriapoda`
 
 Response:
 
 ```json
 {
-  "prediction": "post-moult",
-  "confidence": 0.93
+  "prediction": "moulting",
+  "confidence": 0.64,
+  "organism_bbox": [x, y, w, h],
+  "exuviae_bbox": [x, y, w, h]
 }
 ```
 
 ---
 
-## 📚 Parsing PDFs with GROBID (CLI mode)
+## 📚 Parsing PDFs with GROBID (CLI)
 
 ```bash
-cd tools/grobid/grobid-0.7.1
+cd tools/grobid
 ./gradlew run
 ```
 
+Used to convert scientific papers from PDF to structured TEI-XML, then plain text.
+
 ---
 
-## 🔁 Running Fine-tuning with LoRA
+## 🧪 Fine-tuning (LoRA) for trait extraction
 
 ```bash
+cd finetuning/modules
 python main_generate_dataset.py
 ```
 
-Outputs are saved in `output/`.
+This generates YAML-style Q&A datasets from annotated PDFs (see `finetuning/file/MoultDB character annotations.xlsx`).
 
 ---
 
-## 🖼️ Frontend (React)
+## 🌐 Frontend (React GUI)
 
 ```bash
 cd frontend
@@ -122,11 +130,11 @@ npm start
 ```
 
 Includes:
-- File upload (.txt or PDF)
-- DOI input
-- Trait query box (LLM)
-- Image + taxon prediction (CNN)
-- YAML output and feedback system
+- ✅ PDF or `.txt` upload
+- ✅ DOI input + TEI parsing
+- ✅ Trait-specific queries (NLP)
+- ✅ Image classification (CNN)
+- ✅ YAML output + feedback
 
 ---
 
@@ -135,13 +143,14 @@ Includes:
 ```
 MoultGPT/
 ├── backend/               # Flask server (LLM + CNN)
-├── CNN/                   # Training scripts and models for image classification
+├── CNN/                   # Training scripts and models
 ├── frontend/              # React GUI
-├── finetuning/            # LoRA training data + scripts
-├── paper_handler/         # PDF parsing and summarization
-├── tools/grobid/          # GROBID (PDF to TEI)
-├── data/, output/, images/ # Inputs and results
-├── models/                # Trained CNN weights
+├── finetuning/            # LoRA generation scripts + Excel annotations
+├── paper_handler/         # GROBID-based parsing
+├── tools/grobid/          # GROBID CLI
+├── data/                  # Annotated dataset + split config
+├── models/                # Saved models (.pt, .pkl)
+├── test/results/          # Example prediction images
 └── requirements.txt
 ```
 
@@ -149,18 +158,19 @@ MoultGPT/
 
 ## 🤝 Citation / Acknowledgements
 
-This tool uses:
+This tool integrates:
 
 - [Mistral-7B-Instruct-v0.3](https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.3)
 - [GROBID](https://github.com/kermitt2/grobid)
-- [HuggingFace Transformers](https://huggingface.co/docs/transformers)
+- [Ultralytics YOLOv8](https://github.com/ultralytics/ultralytics)
+- [XGBoost](https://xgboost.readthedocs.io/)
+- [PyTorch](https://pytorch.org/)
 - [scikit-learn](https://scikit-learn.org/)
-- [PyTorch + TorchVision](https://pytorch.org/)
 
 ---
 
 ## 📬 Contact
 
-For collaborations, bug reports, or questions:  
-**Michele Leone** – [michele.leone@outlook.com]  
-Project: [moulting.org](https://www.moulting.org)
+Project lead: **Michele Leone**  
+Email: [michele.leone@outlook.com]  
+Website: [https://www.moulting.org](https://www.moulting.org)
