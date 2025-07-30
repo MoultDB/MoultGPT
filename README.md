@@ -156,6 +156,21 @@ MoultGPT/
 
 ---
 
+## 🧠 What’s Next
+
+### 🧭 Directional Moulting Detection
+
+We're developing a spatial reasoning module to infer **moulting direction** — cephalic, anterior, dorsal, posterior — directly from images.
+
+This involves:
+- Localizing suture lines and egress points with **pose estimation models** (*YOLOv8-pose*, *HRNet*)
+- Estimating anatomical axes and emergence vectors
+- Linking morphology to functional moulting strategies across taxa
+
+🔬 **The goal**: infer movement, structure, and behaviour — from a single image.
+
+---
+
 ## 🤝 Citation / Acknowledgements
 
 This tool integrates:
