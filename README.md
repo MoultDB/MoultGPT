@@ -131,7 +131,7 @@ Heavy models, large datasets, logs, and PDFs are excluded.
 
      ```text
      YOLO detection (fine-tuned on arthropod moulting images):
-     https://huggingface.co/your-username/moultvision-yolo
+     https://huggingface.co/placeholder/moultvision-yolo
      ```
 
 2. **Segmentation masks**
@@ -243,10 +243,14 @@ The LLM pipeline processes a DOI, local PDF, or raw text and extracts arthropod 
    - Produces **clean YAML only**, e.g.:
 
      ```yaml
-     moulting_stage: post-moult
-     taxa: [Hurdiidae, Kerygmachela]
-     evidence: "The exuviae was found fully detached..."
-     confidence: 0.87
+    moulting_stage: post-moult
+    taxa: [Hurdiidae, Kerygmachela]
+    ecdysis_type: dorsal rupture
+    egress_direction: anterior
+    cuticle_state: hardened
+    evidence: "Exuviae positioned behind the specimen; new cuticle rigid with no visible wrinkling."
+    confidence: 0.92
+
      ```
 
 5. **Feedback and fine-tuning**
@@ -269,7 +273,7 @@ The LLM pipeline processes a DOI, local PDF, or raw text and extracts arthropod 
    Optional LoRA adapter (placeholder link, to be replaced by your own):
 
    - **MoultGPT LoRA weights**  
-     https://huggingface.co/your-username/moultgpt-mistral-lora
+     https://huggingface.co/placeholder/moultgpt-mistral-lora
 
 ---
 
@@ -441,5 +445,5 @@ Planned work includes:
 ## 📬 Contact
 
 Project lead: **Michele Leone**  
-email: micheleleone@outlook.com
+Email: micheleleone@outlook.com
 Website: https://www.moulting.org
