@@ -242,7 +242,7 @@ The LLM pipeline processes a DOI, local PDF, or raw text and extracts arthropod 
    - Runs **Mistral-7B-Instruct-v0.3** (4-bit optional, LoRA optional)  
    - Produces **clean YAML only**, e.g.:
 
-     ```yaml
+    ```yaml
     moulting_stage: post-moult
     taxa: [Hurdiidae, Kerygmachela]
     ecdysis_type: dorsal rupture
@@ -250,8 +250,7 @@ The LLM pipeline processes a DOI, local PDF, or raw text and extracts arthropod 
     cuticle_state: hardened
     evidence: "Exuviae positioned behind the specimen; new cuticle rigid with no visible wrinkling."
     confidence: 0.92
-
-     ```
+    ```
 
 5. **Feedback and fine-tuning**
    - `/feedback` endpoint
@@ -445,5 +444,5 @@ Planned work includes:
 ## 📬 Contact
 
 Project lead: **Michele Leone**  
-Email: micheleleone@outlook.com
+Email: micheleleone@outlook.com  
 Website: https://www.moulting.org
