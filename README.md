@@ -1,182 +1,76 @@
 # 🐛 MoultGPT
 
-**MoultGPT** is a modular text + vision system for extracting biologically meaningful moulting traits of arthropods from both **scientific articles** and **images**.
+**MoultGPT** is a dual text + vision system that extracts biologically meaningful moulting traits of arthropods from **scientific articles** and **images**, combining YOLO-based detection, segmentation masks, geometric feature extraction, and LLM-based trait extraction with strict domain gating.
 
 The project is split into two main components:
 
-- **Vision pipeline (`vision/`)** – given an arthropod image, it:
+- **Vision module (`vision/`)** – given an arthropod image, it:
   - detects organism and exuviae with a fine-tuned YOLO model,
-  - builds a segmentation-like mask,
+  - builds segmentation masks,
   - extracts geometric / colour features,
   - predicts the moulting stage and related attributes.
 
-- **LLM pipeline (`llm/`)** – given a DOI, PDF, or plain text, it:
+- **LLM module (`llm/`)** – given a DOI, PDF, or plain text, it:
   - downloads the paper (via Unpaywall),
   - converts PDF → TEI XML → plain text (via GROBID),
   - selects sentences relevant to moulting,
   - checks that the paper + question are in scope (arthropod moulting only),
-  - queries a local Mistral-7B model and returns *clean YAML* with trait values.
-
-
-The long-term goal is a **specialised assistant** for arthropod moulting, combining text mining and computer vision under a single API and GUI.
+  - queries a local Mistral-7B model (optionally LoRA-finetuned) and returns *clean YAML* with trait values.
 
 ---
 
-## 🔬 High-level Architecture
+## 🖼️ Vision Module – Examples
 
-### 1. Vision / CNN–YOLO module (`vision/`)
+### YOLO + stage classifier (3 examples)
 
-> The vision pipeline is currently exposed as a separate demo (MoultVision), and is designed to be integrated with the LLM-based traits in a unified MoultGPT API.
-
-1. **Object detection (YOLO)**
-   - Fine-tuned YOLO model detects:
-     - `organism` (living specimen),
-     - `exuviae` (shed exoskeleton).
-   - Produces bounding boxes with class labels and confidences.
-   - Typical weights download (placeholder):
-
-     ```text
-     YOLO detection (fine-tuned on arthropod moulting images):
-     https://huggingface.co/your-username/moultvision-yolo
-     ```
-
-2. **Segmentation-style masks**
-   - From the bounding boxes, the pipeline generates a **mask channel** distinguishing:
-     - organism region,
-     - exuviae region,
-     - background.
-   - This mask can be concatenated with RGB as a 4th channel for CNN models, or used to derive geometric features.
-
-3. **Feature extraction & classification (XGBoost / CNN)**
-   - Geometric features:
-     - area, aspect ratio, distance between boxes, overlap, centroids, etc.
-   - Intensity / colour statistics:
-     - mean RGB / grayscale, contrasts, etc. per box.
-   - `XGBoost` classifier predicts the moulting stage:
-     - `pre-moult`
-     - `moulting`
-     - `post-moult`
-     - `exuviae`
-   - In parallel, CNN variants (EfficientNet) classify stage directly from image (+mask).
-   - Classifier weights (placeholder):
-
-     ```text
-     XGBoost stage classifier:
-     https://huggingface.co/your-username/moultvision-xgboost
-     ```
-
-4. **Data generation**
-   - The vision data used for YOLO and XGBoost is **self-generated** from iNaturalist images (only CC0, CC-BY, CC-BY-NC):
-     - Raw images and metadata are processed by utility scripts (e.g. `vision/utility/build_dataset.py`).
-     - The script constructs:
-       - YOLO-style `images/` and `labels/` directories,
-       - CSV feature tables for the XGBoost training pipeline.
-   - Only **small subsets** and example files are kept in the public repo; large datasets are excluded.
-
-5. **Rendering and frontend**
-   - The MoultVision React frontend:
-     - Lets the user upload an image,
-     - Sends it to the Flask vision backend,
-     - Displays:
-       - 🟥 organism box,
-       - 🟦 exuviae box,
-       - 🟢 predicted stage + confidence,
-       - optional orientation cues (from pose models).
+| ![example_1](output/example_1.png) | ![example_2](output/example_2.png) | ![example_3](output/example_3.png) |
+|:----------------------------------:|:----------------------------------:|:----------------------------------:|
+| moulting (0.82)                  | post-moult (0.75)                     | exuviae (0.67)                    |
 
 ---
 
-### 2. Text / LLM module (`llm/`)
+### Segmentation overlays (3 examples)
 
-1. **Input**  
-   - DOI (e.g. `10.1038/s41598-022-18146-3`)  
-   - Local PDF  
-   - Raw text (plain text or pre-extracted TEI)
-
-2. **Acquisition & parsing**
-   - `pipeline/downloader.py`  
-     - Uses the **Unpaywall API** to resolve a DOI to an open-access PDF.  
-   - `pipeline/parser.py`  
-     - Calls **GROBID (CLI)** to convert PDF → TEI XML.  
-     - Extracts textual content (title, abstract, body) as plain text.
-
-3. **Taxonomy graph & gating**  
-   - `domain/taxonomy_graph.py`  
-     - Loads a large CSV of arthropod taxa with canonical names and synonyms (GBIF, NCBI, iNaturalist).  
-     - Builds a **directed graph** of Arthropoda (e.g. via NetworkX) using taxonomic paths.  
-     - Indexes all canonical names and synonyms for fast lookup in free text.
-   - `pipeline/gating.py`  
-     - **Paper gate**:  
-       - Looks for arthropod taxa in the paper (using the taxonomy graph).  
-       - Checks that a minimum number of moulting-related sentences is present.  
-       - Marks the paper as `paper_has_arthropods` / `paper_is_relevant`.
-     - **Question gate**:  
-       - Rejects questions clearly about vertebrates (birds, mammals, reptiles, etc.).  
-       - Rejects off-topic questions (GDP, economics, generic “summarise the paper”, etc.).  
-       - Accepts:
-         - Questions with explicit arthropod taxa (e.g. *Hurdiidae*, *Kerygmachela*, *Trilobita*).  
-         - Questions using generic arthropod terms (e.g. *spider*, *scorpion*, *insect*, *bug*, *crustacean*).  
-         - Generic moulting questions **only if** the paper itself clearly concerns arthropods.
-
-   Together, these gates enforce the design choice:  
-   > **MoultGPT only answers questions about moulting in arthropods.**
-
-4. **Sentence selection (moulting-related)**  
-   - `pipeline/summarization.py`  
-     - Splits the text into sentences.  
-     - Filters with moulting-related keywords (moult, moulting, instar, exuviae, cuticle, ecdysis, etc.).  
-     - Uses **TF–IDF + K-Means** to select a diverse subset of relevant sentences.  
-     - Output: a compact summary (typically ~20 sentences) focusing on moulting.
-
-5. **LLM prompt construction and inference**
-   - `llm/backend/app.py`
-     - Exposes a Flask API with `/query`, `/preprocess` and `/feedback`.
-     - Once the question and paper pass the gates:
-       - Builds a system prompt specialised for arthropod moulting.
-       - Injects:
-         - the **moulting-focused summary** (context),
-         - the **user query** (trait to extract).
-       - Formats as a Mistral-style `[INST] ... [/INST]` prompt.
-     - Calls **Mistral-7B-Instruct-v0.3** locally:
-       - Optional 4-bit quantisation (bitsandbytes) on GPU.
-       - Optional LoRA adapter (for fine-tuning).
-       - Deterministic decoding (`do_sample=False`, `temperature=0.0`).
-     - Returns **only the YAML** produced by the model (no extra prose), e.g.:
-
-     ```yaml
-     moulting_stage: post-moult
-     taxa:
-       - Hurdiidae
-       - Kerygmachela
-     evidence: "The exuviae was found fully detached behind the specimen, with the new cuticle fully hardened."
-     confidence: 0.87
-     ```
-
-6. **Feedback and fine-tuning**
-   - `/feedback` endpoint
-     - Stores per-query feedback in `llm/backend/feedback/feedback.jsonl`.
-     - Designed for future RLHF and comparison between:
-       - vanilla Mistral,
-       - LoRA-fine-tuned Mistral,
-       - alternative LLMs (e.g. LLaMA variants).
-   - `llm/finetuning/`
-     - Contains the dataset generator, templates, and modules used to create YAML QA pairs from annotated papers (no large `.jsonl` files kept in the public repo).
-
-7. **Model downloads**
-
-   Base model:
-
-   - **Mistral-7B-Instruct-v0.3**  
-     https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.3
-
-   Optional LoRA adapter (placeholder link, to be replaced by your own):
-
-   - **MoultGPT LoRA weights**  
-     https://huggingface.co/your-username/moultgpt-mistral-lora
-
+| ![example_1_segmented](output/example_1_segmented.png) | ![example_2_segmented](output/example_2_segmented.png) | ![example_3_segmented](output/example_3_segmented.png) |
+|:------------------------------------------------------:|:-------------------------------------------------------:|:------------------------------------------------------:|
+| organism + exuviae mask                                | organism-only mask                                       | exuviae-only mask                                     |
 
 ---
 
-## 📦 Repository Structure (simplified, public-ready)
+## 🧠 LLM Module – Examples
+
+### ✅ Extraction of Moulting Traits (YAML Output)
+
+![llm2](output/llm_2.png)
+
+---
+
+### ❌ Out-of-scope Rejection
+MoultGPT refuses vertebrate moulting questions and unrelated prompts.
+
+![llm1](output/llm_1.png)
+
+---
+
+### 🎯 Example gating behaviour
+
+Given a paper clearly about arthropods (e.g. Cambrian euarthropods):
+
+- ✅ “What moulting traits are reported for Hurdiidae and Kerygmachela in this paper?”  
+- ✅ “Extract all information related to moulting of the species in this paper.”  
+- ✅ “Summarise all moulting traits of the spider described in this paper.”  
+- ❌ “How often do birds moult their feathers?” → rejected (vertebrates).  
+- ❌ “Which species is described in this paper?” → rejected (not moulting-focused).  
+- ❌ “What is the GDP of France?” → rejected (off-topic).
+
+Given an economics paper with no arthropods and no moulting sentences:
+
+- All moulting-related questions are rejected at the **paper gate** with:  
+  *“The provided article does not seem to contain enough moulting-related content to answer questions reliably.”*
+
+---
+
+## 📦 Repository Structure
 
 Only lightweight, GitHub-safe files are included.  
 Heavy models, large datasets, logs, and PDFs are excluded.
@@ -220,6 +114,66 @@ Heavy models, large datasets, logs, and PDFs are excluded.
 └── README.md
 ```
 
+---
+
+## 🔬 High-level Architecture
+
+## 1. Vision / CNN–YOLO module (`vision/`)
+
+> The vision pipeline is currently exposed as a separate demo (MoultVision), and is designed to be integrated with the LLM-based traits in a unified MoultGPT API.
+
+1. **Object detection (YOLO)**
+   - Fine-tuned YOLO model detects:
+     - `organism` (living specimen),
+     - `exuviae` (shed exoskeleton).
+   - Produces bounding boxes with class labels and confidences.
+   - Typical weights download (placeholder):
+
+     ```text
+     YOLO detection (fine-tuned on arthropod moulting images):
+     https://huggingface.co/your-username/moultvision-yolo
+     ```
+
+2. **Segmentation masks**
+   - From the bounding boxes, the pipeline generates a **mask channel** distinguishing:
+     - organism region,
+     - exuviae region,
+     - background.
+   - This mask can be concatenated with RGB as a 4th channel for CNN models, or used to derive geometric features.
+
+3. **Feature extraction & classification (XGBoost)**
+   - Geometric features:
+     - area, aspect ratio, distance between boxes, overlap, centroids, etc.
+   - Intensity / colour statistics:
+     - mean RGB / grayscale, contrasts, etc. per box.
+   - `XGBoost` classifier predicts the moulting stage:
+     - `pre-moult`
+     - `moulting`
+     - `post-moult`
+     - `exuviae`
+
+     ```text
+     XGBoost stage classifier:
+     https://huggingface.co/placeholder/moultvision-xgboost
+     ```
+
+4. **Data generation**
+   - The vision data used for YOLO and XGBoost is **self-generated** from iNaturalist images (only CC0, CC-BY, CC-BY-NC):
+     - Raw images and metadata are processed by utility scripts (e.g. `vision/utility/build_dataset.py`).
+     - The script constructs:
+       - YOLO-style `images/` and `labels/` directories,
+       - CSV feature tables for the XGBoost training pipeline.
+   - Only **small subsets** and example files are kept in the public repo; large datasets are excluded.
+
+5. **Rendering and frontend**
+   - The Vision module React frontend:
+     - Lets the user upload an image,
+     - Sends it to the Flask vision backend,
+     - Displays:
+       - 🟥 organism box,
+       - 🟦 exuviae box,
+       - 🟢 predicted stage + confidence,
+       - optional orientation cues (from pose models).
 
 ---
 
@@ -261,22 +215,61 @@ A React interface opens at http://localhost:3000, where you can upload an image 
 
 ---
 
+## 2. Text / LLM module (`llm/`)
 
-## 🖼️ Vision Module – Examples
+The LLM pipeline processes a DOI, local PDF, or raw text and extracts arthropod moulting traits using a Mistral-7B model (optionally LoRA-finetuned). It consists of:
 
-### YOLO + stage classifier (3 examples)
+1. **Acquisition & parsing**
+   - DOI → PDF via Unpaywall  
+   - PDF → TEI/XML → plain text via GROBID (CLI)
 
-| ![example_1](output/example_1.png) | ![example_2](output/example_2.png) | ![example_3](output/example_3.png) |
-|:----------------------------------:|:----------------------------------:|:----------------------------------:|
-| post-moult (0.82)                  | exuviae (0.75)                     | organism (0.67)                    |
+2. **Taxonomy graph & gating**
+   - A precomputed **Arthropoda graph** (GBIF + NCBI + iNaturalist) encodes canonical names, synonyms and taxonomic paths.
+   - The graph is used to detect arthropod taxa in the paper and map fuzzy names to their clades.
+   - **Paper gate**: rejects papers without arthropods or without moulting content  
+   - **Question gate**: rejects vertebrate moulting questions or off-topic prompts  
+   - Ensures the system answers **only arthropod moulting** questions
 
----
+3. **Sentence selection**
+   - Sentence splitting → keyword filtering  
+   - TF-IDF + K-Means to select ~20 diverse, moulting-relevant sentences  
+   - Used as the context passed to the LLM
 
-### Segmentation-style overlays (3 examples)
+4. **LLM inference**
+   - Builds a moulting-specialised prompt combining:
+     - the selected sentence summary  
+     - the user question  
+   - Runs **Mistral-7B-Instruct-v0.3** (4-bit optional, LoRA optional)  
+   - Produces **clean YAML only**, e.g.:
 
-| ![example_1_segmented](output/example_1_segmented.png) | ![example_2_segmented](output/example_2_segmented.png) | ![example_3_segmented](output/example_3_segmented.png) |
-|:------------------------------------------------------:|:-------------------------------------------------------:|:------------------------------------------------------:|
-| organism + exuviae mask                                | exuviae-only mask                                       | organism-only mask                                     |
+     ```yaml
+     moulting_stage: post-moult
+     taxa: [Hurdiidae, Kerygmachela]
+     evidence: "The exuviae was found fully detached..."
+     confidence: 0.87
+     ```
+
+5. **Feedback and fine-tuning**
+   - `/feedback` endpoint
+     - Stores per-query feedback in `llm/backend/feedback/feedback.jsonl`.
+     - Designed for future RLHF and comparison between:
+       - vanilla Mistral,
+       - LoRA-fine-tuned Mistral,
+       - alternative LLMs (e.g. LLaMA variants).
+   - `llm/finetuning/`
+     - Contains the dataset generator, templates, and modules used to create YAML QA pairs from annotated papers (no large `.jsonl` files kept in the public repo).
+
+6. **Model downloads**
+
+   Base model:
+
+   - **Mistral-7B-Instruct-v0.3**  
+     https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.3
+
+   Optional LoRA adapter (placeholder link, to be replaced by your own):
+
+   - **MoultGPT LoRA weights**  
+     https://huggingface.co/your-username/moultgpt-mistral-lora
 
 ---
 
@@ -416,24 +409,6 @@ confidence: 0.87
 
 ---
 
-## 🎯 Example gating behaviour
-
-Given a paper clearly about arthropods (e.g. Cambrian euarthropods):
-
-- ✅ “What moulting traits are reported for Hurdiidae and Kerygmachela in this paper?”  
-- ✅ “Extract all information related to moulting of the species in this paper.”  
-- ✅ “Summarise all moulting traits of the spider described in this paper.”  
-- ❌ “How often do birds moult their feathers?” → rejected (vertebrates).  
-- ❌ “Which species is described in this paper?” → rejected (not moulting-focused).  
-- ❌ “What is the GDP of France?” → rejected (off-topic).
-
-Given an economics paper with no arthropods and no moulting sentences:
-
-- All moulting-related questions are rejected at the **paper gate** with:  
-  *“The provided article does not seem to contain enough moulting-related content to answer questions reliably.”*
-
----
-
 ## 🔭 Roadmap
 
 Planned work includes:
@@ -466,4 +441,5 @@ Planned work includes:
 ## 📬 Contact
 
 Project lead: **Michele Leone**  
+email: micheleleone@outlook.com
 Website: https://www.moulting.org
