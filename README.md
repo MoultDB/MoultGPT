@@ -127,11 +127,11 @@ Heavy models, large datasets, logs, and PDFs are excluded.
      - `organism` (living specimen),
      - `exuviae` (shed exoskeleton).
    - Produces bounding boxes with class labels and confidences.
-   - Typical weights download (placeholder):
+   - Typical weights download:
 
      ```text
      YOLO detection (fine-tuned on arthropod moulting images):
-     https://huggingface.co/placeholder/moultvision-yolo
+     https://huggingface.co/MrRoar/arthropods_moulting_detection
      ```
 
 2. **Segmentation masks**
@@ -140,6 +140,11 @@ Heavy models, large datasets, logs, and PDFs are excluded.
      - exuviae region,
      - background.
    - This mask can be concatenated with RGB as a 4th channel for CNN models, or used to derive geometric features.
+
+      ```text
+     FastSAM segmentation:
+     https://github.com/ultralytics/assets/releases/download/v8.3.0/FastSAM-x.pt
+     ```  
 
 3. **Feature extraction & classification (XGBoost)**
    - Geometric features:
@@ -154,7 +159,7 @@ Heavy models, large datasets, logs, and PDFs are excluded.
 
      ```text
      XGBoost stage classifier:
-     https://huggingface.co/placeholder/moultvision-xgboost
+     https://huggingface.co/MrRoar/arthropods_moulting_stage
      ```
 
 4. **Data generation**
@@ -269,7 +274,7 @@ The LLM pipeline processes a DOI, local PDF, or raw text and extracts arthropod 
    - **Mistral-7B-Instruct-v0.3**  
      https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.3
 
-   Optional LoRA adapter (placeholder link, to be replaced by your own):
+   Optional LoRA adapter (currently placeholder link):
 
    - **MoultGPT LoRA weights**  
      https://huggingface.co/placeholder/moultgpt-mistral-lora
@@ -334,8 +339,8 @@ Debug endpoint, useful to inspect what the system sees before calling the LLM.
 
 **Form fields (multipart/form-data):**
 
-- `doi` (optional) – article DOI  
-- `file` (optional) – uploaded PDF  
+- `doi` (option 1) – article DOI   
+- `file` (option 2) – uploaded PDF 
 - `text` (optional) – plain text  
 
 Priority: `doi` > `file` > `text`.
