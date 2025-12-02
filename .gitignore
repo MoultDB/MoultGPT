@@ -1,20 +1,144 @@
-# --- Python cache and system files ---
+#######################################
+# Python / Virtual Environments
+#######################################
 __pycache__/
 *.py[cod]
+*.pyo
+*.pyd
+*.so
 *.log
-*.err
+
+.env
+.venv/
+venv/
+vision_env/
+
+#######################################
+# OS / Editor / Misc
+#######################################
 .DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+*.tmp
+*.bak
 
-# --- Virtual environments ---
-mistral_env/
-.env/
 
-# --- Large datasets to exclude ---
-data/inat/train/      # training images
-data/inat/val/        # validation images
-data/yolo/images/     # YOLO-processed images
-data/yolo/labels/     # YOLO labels
+############################################################
+# 🔬 LLM MODULE
+############################################################
 
-# --- Frontend dependencies ---
-frontend/node_modules/
-frontend/build/
+#######################################
+# LLM — Heavy models (keep folder, ignore contents)
+#######################################
+llm/backend/models/*
+!llm/backend/models/.gitkeep
+
+#######################################
+# LLM — PDF, TEI, extracted text
+# We IGNORE large raw files but KEEP structure
+#######################################
+llm/data/papers_pdf/*
+!llm/data/papers_pdf/.gitkeep
+
+llm/data/papers_txt/*
+!llm/data/papers_txt/.gitkeep
+
+llm/data/summaries/*
+!llm/data/summaries/.gitkeep
+
+#######################################
+# LLM — Finetuning: heavy data
+#######################################
+llm/finetuning/papers/*
+!llm/finetuning/papers/.gitkeep
+
+llm/finetuning/output/*
+!llm/finetuning/output/.gitkeep
+
+# Keep scripts and modules (code only)
+!llm/finetuning/*.py
+!llm/finetuning/modules/**
+
+
+############################################################
+# VISION MODULE
+############################################################
+
+#######################################
+# Vision — Backend Models (keep folder)
+#######################################
+vision/backend/models/*
+!vision/backend/models/.gitkeep
+
+#######################################
+# Vision — Raw iNat data
+#######################################
+vision/data/inat_raw/*
+!vision/data/inat_raw/.gitkeep
+
+#######################################
+# Vision — YOLO dataset
+#######################################
+vision/data/yolo/images/*
+vision/data/yolo/labels/*
+vision/data/yolo/*.cache
+
+# But keep the YOLO config
+!vision/data/yolo/data.yaml
+
+#######################################
+# Vision — Auto-generated CSVs & arrays
+#######################################
+vision/data/*.csv
+vision/data/*.npy
+vision/data/*.npz
+vision/data/*.txt
+
+#######################################
+# Vision — Training outputs
+#######################################
+vision/scripts/training/runs/
+vision/scripts/results/
+vision/scripts/results/*
+
+#######################################
+# Vision — Frontend (React)
+#######################################
+vision/frontend/node_modules/
+vision/frontend/build/
+
+vision/frontend/.env
+vision/frontend/.env.local
+vision/frontend/.env.development.local
+vision/frontend/.env.production.local
+vision/frontend/.env.test.local
+
+
+############################################################
+# 🔎 NON-IGNORED ITEMS (important)
+############################################################
+
+# Keep documentation
+!**/*.md
+
+# Keep config and YAML
+!**/*.yaml
+!**/*.yml
+
+# Keep example test images
+!vision/test/*
+
+# Keep scripts
+!vision/scripts/**/*.py
+!vision/utility/**/*.py
+
+# Keep LLM test PDFs (small)
+!llm/test/*
+
+# Keep GROBID config files
+!llm/tools/grobid/**
+
+llm/data/arthropod_taxonomy.csv
